@@ -1,0 +1,18 @@
+using System;
+
+[Serializable]
+public class TwinDataPoint
+{
+    public long timestamp;
+    public float ratio;         // Derived from your Uniswap analysis
+    public float amount0;
+    public float amount1;
+    public float anomalyScore;  // Useful if using the SIDTT dataset
+    public string status;
+}
+
+[Serializable]
+public class TwinDataList
+{
+    public TwinDataPoint[] entries;
+}
