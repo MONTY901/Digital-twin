@@ -1,0 +1,29 @@
+using UnityEngine;
+using UnityEngine.Networking;
+using System.Collections;
+
+public class DataReceiver : MonoBehaviour
+{
+    public string dataSourceUrl = "http://localhost:8000/latest";
+    public delegate void OnDataReceived(TwinDataPoint data);
+    public static event OnDataReceived DataUpdated;
+
+    void Start() => StartCoroutine(FetchDataLoop());
+
+    IEnumerator FetchDataLoop()
+    {
+        while (true)
+        {
+            using (UnityWebRequest request = UnityWebRequest.Get(dataSourceUrl))
+            {
+                yield return request.SendWebRequest();
+                if (request.result == UnityWebRequest.Result.Success)
+                {
+                    TwinDataPoint data = JsonUtility.FromJson<TwinDataPoint>(request.downloadHandler.text);
+                    DataUpdated?.Invoke(data);
+                }
+            }
+            yield return new WaitForSeconds(0.5f); // Update frequency
+        }
+    }
+}
