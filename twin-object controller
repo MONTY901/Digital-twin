@@ -1,0 +1,23 @@
+using UnityEngine;
+
+public class TwinObjectController : MonoBehaviour
+{
+    public Transform visualIndicator;
+    public Renderer statusMaterial;
+
+    void OnEnable() => DataStreamer.OnUpdate += SyncTwin;
+    void OnDisable() => DataStreamer.OnUpdate -= SyncTwin;
+
+    void SyncTwin(TwinState state)
+    {
+        // Maps the 'ratio' to the vertical scale (Z or Y axis)
+        float newHeight = Mathf.Lerp(visualIndicator.localScale.y, state.ratio, Time.deltaTime * 5f);
+        visualIndicator.localScale = new Vector3(1, newHeight, 1);
+
+        // Change color based on Anomaly Score (SIDTT Logic)
+        if (state.anomalyScore > 0.8f)
+            statusMaterial.material.color = Color.red;
+        else
+            statusMaterial.material.color = Color.green;
+    }
+}
