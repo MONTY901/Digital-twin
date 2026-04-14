@@ -1,0 +1,29 @@
+using UnityEngine;
+using UnityEngine.Networking;
+using System.Collections;
+
+public class DataStreamer : MonoBehaviour
+{
+    public string apiEndpoint = "http://localhost:8000/get_twin_data";
+    public delegate void OnDataReceived(TwinState state);
+    public static event OnDataReceived OnUpdate;
+
+    void Start() => StartCoroutine(StreamData());
+
+    IEnumerator StreamData()
+    {
+        while (true)
+        {
+            using (UnityWebRequest webRequest = UnityWebRequest.Get(apiEndpoint))
+            {
+                yield return webRequest.SendWebRequest();
+                if (webRequest.result == UnityWebRequest.Result.Success)
+                {
+                    TwinState state = JsonUtility.FromJson<TwinState>(webRequest.downloadHandler.text);
+                    OnUpdate?.Invoke(state);
+                }
+            }
+            yield return new WaitForSeconds(1.0f); // Polling frequency
+        }
+    }
+}
