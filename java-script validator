@@ -1,0 +1,19 @@
+const validator = require('validator');
+
+const validateAuthor = (value) => value.length >= 3 && value.length <= 50;
+
+const validatePartStatus = (value) => {
+    const statuses = ['Operational', 'Maintenance', 'Anomalous', 'Offline'];
+    return statuses.includes(value);
+};
+
+const validateIssueDescription = (value) => value.length > 0 && value.length <= 500;
+
+const validateRevisionDescription = (value) => value.length <= 1000;
+
+module.exports = {
+    validateAuthor,
+    validatePartStatus,
+    validateIssueDescription,
+    validateRevisionDescription
+};
