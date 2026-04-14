@@ -1,0 +1,19 @@
+using UnityEngine;
+using UnityEngine.XR.Interaction.Toolkit;
+
+public class XRInteractionLogger : MonoBehaviour
+{
+    private XRGrabInteractable grabInteractable;
+
+    void Awake()
+    {
+        grabInteractable = GetComponent<XRGrabInteractable>();
+        grabInteractable.selectEntered.AddListener(OnInspected);
+    }
+
+    void OnInspected(SelectEnterEventArgs args)
+    {
+        Debug.Log("User has manually inspected the Digital Twin asset.");
+        // You can trigger more detailed data views or historical charts here
+    }
+}
