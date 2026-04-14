@@ -1,0 +1,98 @@
+using UnityEngine;
+
+public class TwinVisualizer : MonoBehaviour
+{
+    [Header("References")]
+    [SerializeField] private Transform pillar;
+    [SerializeField] private Renderer pillarRenderer;
+
+    [Header("Scaling Settings")]
+    [SerializeField] private float minHeight = 0.1f;
+    [SerializeField] private float maxHeight = 10f;
+    [SerializeField] private float heightMultiplier = 2f;
+    [SerializeField] private float smoothSpeed = 5f;
+
+    [Header("Anomaly Settings")]
+    [SerializeField] private float anomalyThreshold = 0.7f;
+    [SerializeField] private Color normalColor = Color.cyan;
+    [SerializeField] private Color warningColor = Color.yellow;
+    [SerializeField] private Color anomalyColor = Color.red;
+
+    [Header("Effects")]
+    [SerializeField] private bool enablePulseEffect = true;
+    [SerializeField] private float pulseSpeed = 5f;
+    [SerializeField] private float pulseIntensity = 0.2f;
+
+    private float currentHeight;
+    private Material pillarMaterial;
+
+    void Awake()
+    {
+        if (pillar == null || pillarRenderer == null)
+        {
+            Debug.LogError("TwinVisualizer: Missing references!");
+            enabled = false;
+            return;
+        }
+
+        pillarMaterial = pillarRenderer.material;
+        currentHeight = pillar.localScale.y;
+    }
+
+    void OnEnable()
+    {
+        DataReceiver.DataUpdated += UpdateVisuals;
+    }
+
+    void OnDisable()
+    {
+        DataReceiver.DataUpdated -= UpdateVisuals;
+    }
+
+    void UpdateVisuals(TwinDataPoint data)
+    {
+        if (data == null) return;
+
+        // ----------------------------
+        // HEIGHT SMOOTHING
+        // ----------------------------
+        float targetHeight = Mathf.Clamp(data.ratio * heightMultiplier, minHeight, maxHeight);
+
+        currentHeight = Mathf.Lerp(currentHeight, targetHeight, Time.deltaTime * smoothSpeed);
+        pillar.localScale = new Vector3(1, currentHeight, 1);
+
+        // ----------------------------
+        // COLOR GRADIENT BASED ON ANOMALY
+        // ----------------------------
+        Color targetColor;
+
+        if (data.anomalyScore > anomalyThreshold)
+        {
+            targetColor = anomalyColor;
+        }
+        else if (data.anomalyScore > anomalyThreshold * 0.5f)
+        {
+            targetColor = warningColor;
+        }
+        else
+        {
+            targetColor = normalColor;
+        }
+
+        pillarMaterial.color = Color.Lerp(pillarMaterial.color, targetColor, Time.deltaTime * smoothSpeed);
+
+        // ----------------------------
+        // PULSE EFFECT FOR ANOMALY
+        // ----------------------------
+        if (enablePulseEffect && data.anomalyScore > anomalyThreshold)
+        {
+            float pulse = Mathf.Sin(Time.time * pulseSpeed) * pulseIntensity;
+            pillar.localScale += new Vector3(0, pulse, 0);
+        }
+
+        // ----------------------------
+        // DEBUG LOGGING
+        // ----------------------------
+        Debug.Log($"[Twin] Ratio: {data.ratio:F3}, Anomaly: {data.anomalyScore:F3}");
+    }
+}
