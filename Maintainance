@@ -1,0 +1,171 @@
+const express = require('express');
+const { Part, Review, Issue } = require('../model/maintenance');
+
+let router = express.Router();
+
+// ---------------- LIMITS ----------------
+const PartTableLimit = 2048;
+const ReviewTableLimit = 256;
+const IssueTableLimit = 256;
+
+// ---------------- HELPERS ----------------
+function count(Model) {
+    return Model.countDocuments({});
+}
+
+function findOrCreatePart(id) {
+    return new Promise((resolve, reject) => {
+        Part.findOne({ id }, async (err, part) => {
+            if (err) return reject(err);
+
+            if (part) return resolve(part);
+
+            try {
+                const newPart = await Part.create({
+                    id,
+                    createdAt: new Date(),
+                    status: 'ok'
+                });
+                resolve(newPart);
+            } catch (err) {
+                reject(err);
+            }
+        });
+    });
+}
+
+// ---------------- REVIEWS ----------------
+
+// Get reviews with filter (passed/failed)
+router.get('/reviews/filter', async (req, res) => {
+    try {
+        const query = {};
+        if (req.query.passed !== undefined) {
+            query.passed = req.query.passed === 'true';
+        }
+
+        const reviews = await Review.find(query);
+        res.json(reviews);
+    } catch (err) {
+        res.status(500).send(err);
+    }
+});
+
+// Update review
+router.put('/reviews/:id', async (req, res) => {
+    try {
+        const updated = await Review.findByIdAndUpdate(
+            req.params.id,
+            req.body,
+            { new: true }
+        );
+        res.json(updated);
+    } catch (err) {
+        res.status(500).send(err);
+    }
+});
+
+// Delete review
+router.delete('/reviews/:id', async (req, res) => {
+    try {
+        await Review.findByIdAndDelete(req.params.id);
+        res.json({ message: 'Review deleted' });
+    } catch (err) {
+        res.status(500).send(err);
+    }
+});
+
+// ---------------- ISSUES ----------------
+
+// Update issue
+router.put('/issues/:id', async (req, res) => {
+    try {
+        const updated = await Issue.findByIdAndUpdate(
+            req.params.id,
+            req.body,
+            { new: true }
+        );
+        res.json(updated);
+    } catch (err) {
+        res.status(500).send(err);
+    }
+});
+
+// Delete issue
+router.delete('/issues/:id', async (req, res) => {
+    try {
+        await Issue.findByIdAndDelete(req.params.id);
+        res.json({ message: 'Issue deleted' });
+    } catch (err) {
+        res.status(500).send(err);
+    }
+});
+
+// Get issues by author
+router.get('/issues/author/:name', async (req, res) => {
+    try {
+        const issues = await Issue.find({ author: req.params.name });
+        res.json(issues);
+    } catch (err) {
+        res.status(500).send(err);
+    }
+});
+
+// ---------------- PARTS ----------------
+
+// Get all parts
+router.get('/parts', async (req, res) => {
+    try {
+        const parts = await Part.find({});
+        res.json(parts);
+    } catch (err) {
+        res.status(500).send(err);
+    }
+});
+
+// Delete part
+router.delete('/parts/:id', async (req, res) => {
+    try {
+        await Part.deleteOne({ id: req.params.id });
+        res.json({ message: 'Part deleted' });
+    } catch (err) {
+        res.status(500).send(err);
+    }
+});
+
+// Bulk update part status
+router.put('/parts/bulk/status', async (req, res) => {
+    try {
+        const { ids, status } = req.body;
+
+        await Part.updateMany(
+            { id: { $in: ids } },
+            { status }
+        );
+
+        res.json({ message: 'Bulk update successful' });
+    } catch (err) {
+        res.status(500).send(err);
+    }
+});
+
+// ---------------- ANALYTICS ----------------
+
+// Get dashboard stats
+router.get('/stats', async (req, res) => {
+    try {
+        const parts = await count(Part);
+        const reviews = await count(Review);
+        const issues = await count(Issue);
+
+        res.json({
+            totalParts: parts,
+            totalReviews: reviews,
+            totalIssues: issues
+        });
+    } catch (err) {
+        res.status(500).send(err);
+    }
+});
+
+module.exports = router;
